@@ -36,7 +36,7 @@ public class EditorSpotlight : EditorWindow, IHasCustomMenu
           GUILayout.Space(15);
 
           GUI.SetNextControlName("SpotlightInput");
-          var prevInput = input;
+          string prevInput = input;
           input = GUILayout.TextField(input, Styles.inputFieldStyle, GUILayout.Height(60));
           EditorGUI.FocusTextInControl("SpotlightInput");
 
@@ -100,27 +100,31 @@ public class EditorSpotlight : EditorWindow, IHasCustomMenu
      // Input
      private void HandleEvents()
      {
-          var current = Event.current;
+          Event current = Event.current;
 
           if (current.type == EventType.KeyDown)
           {
-               if (current.keyCode == KeyCode.UpArrow)
+               switch (current.keyCode)
                {
-                    current.Use();
-                    selectedIndex--;
+                    case KeyCode.UpArrow:
+                         current.Use();
+                         selectedIndex--;
+                         break;
+
+                    case KeyCode.DownArrow:
+                         current.Use();
+                         selectedIndex++;
+                         break;
+
+                    case KeyCode.Return:
+                         OpenSelectedAssetAndClose();
+                         current.Use();
+                         break;
+
+                    case KeyCode.Escape:
+                         Close();
+                         break;
                }
-               else if (current.keyCode == KeyCode.DownArrow)
-               {
-                    current.Use();
-                    selectedIndex++;
-               }
-               else if (current.keyCode == KeyCode.Return)
-               {
-                    OpenSelectedAssetAndClose();
-                    current.Use();
-               }
-               else if (Event.current.keyCode == KeyCode.Escape)
-                    Close();
           }
      }
 
@@ -128,15 +132,17 @@ public class EditorSpotlight : EditorWindow, IHasCustomMenu
      {
           input = "";
           hits.Clear();
-          var json = EditorPrefs.GetString(SearchHistoryKey, JsonUtility.ToJson(new SearchHistory()));
+
+          string json = EditorPrefs.GetString(SearchHistoryKey, JsonUtility.ToJson(new SearchHistory()));
           history = JsonUtility.FromJson<SearchHistory>(json);
+
           Focus();
      }
 
      private void ProcessInput()
      {
           input = input.ToLower();
-          var assetHits = AssetDatabase.FindAssets(input) ?? new string[0];
+          string[] assetHits = AssetDatabase.FindAssets(input) ?? new string[0];
           hits = assetHits.ToList();
 
           // Sort the search hits
@@ -144,15 +150,17 @@ public class EditorSpotlight : EditorWindow, IHasCustomMenu
           {
                // Generally, use click history
                int xScore;
-               history.clicks.TryGetValue(x, out xScore);
                int yScore;
+
+               history.clicks.TryGetValue(x, out xScore);
                history.clicks.TryGetValue(y, out yScore);
 
                // Value files that actually begin with the search input higher
                if (xScore != 0 && yScore != 0)
                {
-                    var xName = Path.GetFileName(AssetDatabase.GUIDToAssetPath(x)).ToLower();
-                    var yName = Path.GetFileName(AssetDatabase.GUIDToAssetPath(y)).ToLower();
+                    string xName = Path.GetFileName(AssetDatabase.GUIDToAssetPath(x)).ToLower();
+                    string yName = Path.GetFileName(AssetDatabase.GUIDToAssetPath(y)).ToLower();
+
                     if (xName.StartsWith(input) && !yName.StartsWith(input))
                          return -1;
                     if (!xName.StartsWith(input) && yName.StartsWith(input))
@@ -167,9 +175,9 @@ public class EditorSpotlight : EditorWindow, IHasCustomMenu
 
      private void VisualizeHits()
      {
-          var current = Event.current;
+          Event current = Event.current;
 
-          var windowRect = this.position;
+          Rect windowRect = position;
           windowRect.height = BaseHeight;
 
           GUILayout.BeginVertical();
@@ -183,12 +191,12 @@ public class EditorSpotlight : EditorWindow, IHasCustomMenu
 
           for (int i = 0; i < hits.Count; i++)
           {
-               var style = i % 2 == 0 ? Styles.entryOdd : Styles.entryEven;
+               GUIStyle style = i % 2 == 0 ? Styles.entryOdd : Styles.entryEven;
 
                GUILayout.BeginHorizontal(GUILayout.Height(EditorGUIUtility.singleLineHeight * 2),
                    GUILayout.ExpandWidth(true));
 
-               var elementRect = GUILayoutUtility.GetRect(0, 0, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+               Rect elementRect = GUILayoutUtility.GetRect(0, 0, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
 
                GUILayout.EndHorizontal();
 
@@ -197,46 +205,45 @@ public class EditorSpotlight : EditorWindow, IHasCustomMenu
                if (current.type == EventType.Repaint)
                {
                     style.Draw(elementRect, false, false, i == selectedIndex, false);
-                    var assetPath = AssetDatabase.GUIDToAssetPath(hits[i]);
-                    var icon = AssetDatabase.GetCachedIcon(assetPath);
+                    string assetPath = AssetDatabase.GUIDToAssetPath(hits[i]);
+                    Texture icon = AssetDatabase.GetCachedIcon(assetPath);
 
-                    var iconRect = elementRect;
+                    Rect iconRect = elementRect;
                     iconRect.x = 30;
                     iconRect.width = 25;
                     GUI.DrawTexture(iconRect, icon, ScaleMode.ScaleToFit);
 
-                    var assetName = Path.GetFileName(assetPath);
+                    string assetName = Path.GetFileName(assetPath);
                     StringBuilder coloredAssetName = new StringBuilder();
 
                     int start = assetName.ToLower().IndexOf(input);
                     int end = start + input.Length;
 
-                    var highlightColor = EditorGUIUtility.isProSkin
+                    string highlightColor = EditorGUIUtility.isProSkin
                         ? Styles.proSkinHighlightColor
                         : Styles.personalSkinHighlightColor;
 
-                    var normalColor = EditorGUIUtility.isProSkin
+                    string normalColor = EditorGUIUtility.isProSkin
                         ? Styles.proSkinNormalColor
                         : Styles.personalSkinNormalColor;
 
                     // Sometimes the AssetDatabase finds assets without the search input in it.
                     if (start == -1)
+                    {
                          coloredAssetName.Append(string.Format("<color=#{0}>{1}</color>", normalColor, assetName));
+                    }
                     else
                     {
                          if (0 != start)
-                              coloredAssetName.Append(string.Format("<color=#{0}>{1}</color>",
-                                  normalColor, assetName.Substring(0, start)));
+                              coloredAssetName.Append(string.Format("<color=#{0}>{1}</color>", normalColor, assetName.Substring(0, start)));
 
-                         coloredAssetName.Append(
-                             string.Format("<color=#{0}><b>{1}</b></color>", highlightColor, assetName.Substring(start, end - start)));
+                         coloredAssetName.Append(string.Format("<color=#{0}><b>{1}</b></color>", highlightColor, assetName.Substring(start, end - start)));
 
                          if (end != assetName.Length - end)
-                              coloredAssetName.Append(string.Format("<color=#{0}>{1}</color>",
-                                  normalColor, assetName.Substring(end, assetName.Length - end)));
+                              coloredAssetName.Append(string.Format("<color=#{0}>{1}</color>", normalColor, assetName.Substring(end, assetName.Length - end)));
                     }
 
-                    var labelRect = elementRect;
+                    Rect labelRect = elementRect;
                     labelRect.x = 60;
                     GUI.Label(labelRect, coloredAssetName.ToString(), Styles.resultLabelStyle);
                }
@@ -244,8 +251,11 @@ public class EditorSpotlight : EditorWindow, IHasCustomMenu
                if (current.type == EventType.MouseDown && elementRect.Contains(current.mousePosition))
                {
                     selectedIndex = i;
+
                     if (current.clickCount == 2)
+                    {
                          OpenSelectedAssetAndClose();
+                    }
                     else
                     {
                          Selection.activeObject = GetSelectedAsset();
@@ -278,16 +288,16 @@ public class EditorSpotlight : EditorWindow, IHasCustomMenu
 
      private UnityEngine.Object GetSelectedAsset()
      {
-          var assetPath = AssetDatabase.GUIDToAssetPath(hits[selectedIndex]);
+          string assetPath = AssetDatabase.GUIDToAssetPath(hits[selectedIndex]);
           return (AssetDatabase.LoadMainAssetAtPath(assetPath));
      }
 
      private void EnforceWindowSize()
      {
-          var pos = position;
-          pos.width = 500;
-          pos.height = BaseHeight;
-          position = pos;
+          var newPosition = position;
+          newPosition.width = 500;
+          newPosition.height = BaseHeight;
+          position = newPosition;
      }
 
      public void AddItemsToMenu(GenericMenu menu)
