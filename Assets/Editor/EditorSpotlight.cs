@@ -124,6 +124,11 @@ public class EditorSpotlight : EditorWindow, IHasCustomMenu
                     case KeyCode.Escape:
                          Close();
                          break;
+
+                    case KeyCode.Tab:
+                         FocusSelection();
+                         Close();
+                         break;
                }
           }
      }
@@ -258,8 +263,7 @@ public class EditorSpotlight : EditorWindow, IHasCustomMenu
                     }
                     else
                     {
-                         Selection.activeObject = GetSelectedAsset();
-                         EditorGUIUtility.PingObject(Selection.activeGameObject);
+                         FocusSelection();
                     }
 
                     Repaint();
@@ -288,7 +292,11 @@ public class EditorSpotlight : EditorWindow, IHasCustomMenu
 
      private UnityEngine.Object GetSelectedAsset()
      {
-          string assetPath = AssetDatabase.GUIDToAssetPath(hits[selectedIndex]);
+          string assetPath = null;
+
+          if (selectedIndex >= 0 && selectedIndex < hits.Count)
+               assetPath = AssetDatabase.GUIDToAssetPath(hits[selectedIndex]);
+
           return (AssetDatabase.LoadMainAssetAtPath(assetPath));
      }
 
@@ -313,6 +321,17 @@ public class EditorSpotlight : EditorWindow, IHasCustomMenu
                var json = EditorPrefs.GetString(SearchHistoryKey, JsonUtility.ToJson(new SearchHistory()));
                Debug.Log(json);
           });
+     }
+
+     private void FocusSelection()
+     {
+          UnityEngine.Object selectedAsset = GetSelectedAsset();
+
+          if (selectedAsset != null)
+          {
+               Selection.activeObject = GetSelectedAsset();
+               EditorGUIUtility.PingObject(Selection.activeGameObject);
+          }
      }
 
      /*************************************************************************************************
