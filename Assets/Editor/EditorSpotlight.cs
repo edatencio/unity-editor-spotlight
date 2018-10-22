@@ -280,14 +280,15 @@ public class EditorSpotlight : EditorWindow, IHasCustomMenu
      {
           Close();
 
-          AssetDatabase.OpenAsset(GetSelectedAsset());
+          if (AssetDatabase.OpenAsset(GetSelectedAsset()))
+          {
+               var guid = hits[selectedIndex];
+               if (!history.clicks.ContainsKey(guid))
+                    history.clicks[guid] = 0;
 
-          var guid = hits[selectedIndex];
-          if (!history.clicks.ContainsKey(guid))
-               history.clicks[guid] = 0;
-
-          history.clicks[guid]++;
-          EditorPrefs.SetString(SearchHistoryKey, JsonUtility.ToJson(history));
+               history.clicks[guid]++;
+               EditorPrefs.SetString(SearchHistoryKey, JsonUtility.ToJson(history));
+          }
      }
 
      private UnityEngine.Object GetSelectedAsset()
