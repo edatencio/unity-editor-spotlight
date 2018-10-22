@@ -1,3 +1,5 @@
+// TODO Adjust the window size when input is empty
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -23,11 +25,19 @@ public class EditorSpotlight : EditorWindow, IHasCustomMenu
 
      private SearchHistory history;
 
+     private bool close;
+
      /*************************************************************************************************
      *** OnGUI
      *************************************************************************************************/
      private void OnGUI()
      {
+          if (close)
+          {
+               Close();
+               return;
+          }
+
           HandleEvents();
 
           GUILayout.BeginHorizontal();
@@ -71,7 +81,7 @@ public class EditorSpotlight : EditorWindow, IHasCustomMenu
      *************************************************************************************************/
      private void OnLostFocus()
      {
-          Close();
+          close = true;
      }
 
      /*************************************************************************************************
@@ -84,6 +94,7 @@ public class EditorSpotlight : EditorWindow, IHasCustomMenu
           {
                instance = CreateInstance<EditorSpotlight>();
                instance.titleContent = new GUIContent("Spotlight");
+               instance.close = false;
 
                Rect newPosition = instance.position;
                newPosition.height = BaseHeight;
@@ -117,17 +128,16 @@ public class EditorSpotlight : EditorWindow, IHasCustomMenu
                          break;
 
                     case KeyCode.Return:
-                         OpenSelectedAssetAndClose();
                          current.Use();
+                         OpenSelectedAssetAndClose();
                          break;
 
                     case KeyCode.Escape:
-                         Close();
+                         close = true;
                          break;
 
                     case KeyCode.Tab:
                          FocusSelection();
-                         Close();
                          break;
                }
           }
@@ -278,7 +288,7 @@ public class EditorSpotlight : EditorWindow, IHasCustomMenu
 
      private void OpenSelectedAssetAndClose()
      {
-          Close();
+          close = true;
 
           if (AssetDatabase.OpenAsset(GetSelectedAsset()))
           {
@@ -330,6 +340,7 @@ public class EditorSpotlight : EditorWindow, IHasCustomMenu
 
           if (selectedAsset != null)
           {
+               EditorUtility.FocusProjectWindow();
                Selection.activeObject = GetSelectedAsset();
                EditorGUIUtility.PingObject(Selection.activeGameObject);
           }
@@ -390,19 +401,17 @@ public class EditorSpotlight : EditorWindow, IHasCustomMenu
                clickKeys.Clear();
                clickValues.Clear();
 
-               int i = 0;
                foreach (var pair in clicks)
                {
                     clickKeys.Add(pair.Key);
                     clickValues.Add(pair.Value);
-                    i++;
                }
           }
 
           public void OnAfterDeserialize()
           {
                clicks.Clear();
-               for (var i = 0; i < clickKeys.Count; i++)
+               for (int i = 0; i < clickKeys.Count; i++)
                     clicks.Add(clickKeys[i], clickValues[i]);
           }
      }
