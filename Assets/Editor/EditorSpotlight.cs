@@ -11,6 +11,8 @@ public class EditorSpotlight : EditorWindow, IHasCustomMenu
      /*************************************************************************************************
      *** Variables
      *************************************************************************************************/
+     private static EditorSpotlight instance;
+
      private const string PlaceholderInput = "Spotlight Search...";
      private const string SearchHistoryKey = "SearchHistoryKey";
      public const int BaseHeight = 90;
@@ -78,17 +80,21 @@ public class EditorSpotlight : EditorWindow, IHasCustomMenu
      [MenuItem("Window/Spotlight %k")]
      private static void Init()
      {
-          var window = CreateInstance<EditorSpotlight>();
-          window.titleContent = new GUIContent("Spotlight");
-          var pos = window.position;
-          pos.height = BaseHeight;
-          pos.xMin = Screen.currentResolution.width / 2 - 500 / 2;
-          pos.yMin = Screen.currentResolution.height * .3f;
-          window.position = pos;
-          window.EnforceWindowSize();
-          window.ShowUtility();
+          if (instance == null)
+          {
+               instance = CreateInstance<EditorSpotlight>();
+               instance.titleContent = new GUIContent("Spotlight");
 
-          window.Reset();
+               Rect newPosition = instance.position;
+               newPosition.height = BaseHeight;
+               newPosition.xMin = (Screen.currentResolution.width / 2) - (500 / 2);
+               newPosition.yMin = Screen.currentResolution.height * 0.3f;
+               instance.position = newPosition;
+               instance.EnforceWindowSize();
+
+               instance.ShowUtility();
+               instance.Reset();
+          }
      }
 
      // Input
